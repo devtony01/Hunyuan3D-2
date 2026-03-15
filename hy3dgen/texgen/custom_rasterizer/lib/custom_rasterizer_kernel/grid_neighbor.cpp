@@ -161,7 +161,7 @@ void DownsampleGrid(Grid& src, Grid& tar)
     tar.stride = src.stride * 2;
     float pos[3];
     std::vector<int> seq2normal_count;
-    for (int i = 0; i < src.seq2grid.size(); ++i) {
+    for (size_t i = 0; i < src.seq2grid.size(); ++i) {
         key2pos(src.seq2grid[i], src.resolution, pos);
         int k = pos2key(pos, tar.resolution);
         int s = seq2normal_count.size();
@@ -179,7 +179,7 @@ void DownsampleGrid(Grid& src, Grid& tar)
         src.downsample_seq[i] = tar.grid2seq[k];
     }
     tar.seq2normal.resize(seq2normal_count.size() / 3);
-    for (int i = 0; i < seq2normal_count.size(); i += 3) {
+    for (size_t i = 0; i < seq2normal_count.size(); i += 3) {
         int t = 0;
         for (int j = 1; j < 3; ++j) {
             if (seq2normal_count[i + j] > seq2normal_count[i + t])
@@ -200,7 +200,7 @@ void NeighborGrid(Grid& grid, std::vector<torch::Tensor> view_layer_positions, i
         int height = t.size(1);
         int width = t.size(2);
         int num_layers = t.size(0);
-        int num_view_layers = t0.size(0);
+        (void)t0;
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
                 for (int l = 0; l < num_layers; ++l) {
@@ -268,7 +268,7 @@ void PadGrid(Grid& src, Grid& tar, std::vector<torch::Tensor>& view_layer_positi
     int indices[9];
     std::vector<int> mapped_even_corners(tar.seq2grid.size(), 0);
     std::vector<int> mapped_odd_corners(tar.seq2grid.size(), 0);
-    for (int i = 0; i < downsample_seq.size(); ++i) {
+    for (size_t i = 0; i < downsample_seq.size(); ++i) {
         if (seq2evencorner[i] > 0) {
             mapped_even_corners[downsample_seq[i]] = 1;
         }
@@ -278,7 +278,7 @@ void PadGrid(Grid& src, Grid& tar, std::vector<torch::Tensor>& view_layer_positi
     }
     auto& tar_seq2normal = tar.seq2normal;
     auto& tar_seq2grid = tar.seq2grid;
-    for (int i = 0; i < tar_seq2grid.size(); ++i) {
+    for (size_t i = 0; i < tar_seq2grid.size(); ++i) {
         if (mapped_even_corners[i] == 1 && mapped_odd_corners[i] == 1)
             continue;
         auto k = tar_seq2grid[i];
@@ -312,7 +312,11 @@ std::vector<std::vector<torch::Tensor>> build_hierarchy(std::vector<torch::Tenso
     std::vector<torch::Tensor> view_layer_normals, int num_level, int resolution)
 {
     if (view_layer_positions.size() != 3 || num_level < 1) {
-        printf("Alert! We require 3 layers and at least 1 level! (%d %d)\n", view_layer_positions.size(), num_level);
+        printf(
+            "Alert! We require 3 layers and at least 1 level! (%zu %d)\n",
+            view_layer_positions.size(),
+            num_level
+        );
         return {{},{},{},{}};
     }
 
@@ -379,7 +383,7 @@ std::vector<std::vector<torch::Tensor>> build_hierarchy(std::vector<torch::Tenso
     for (int i = num_level - 2; i >= 0; --i) {
         PadGrid(grids[i], grids[i + 1], view_layer_positions);
     }
-    for (int i = grids[0].num_origin_seq; i < grids[0].seq2grid.size(); ++i) {
+    for (size_t i = grids[0].num_origin_seq; i < grids[0].seq2grid.size(); ++i) {
         int k = grids[0].seq2grid[i];
         float p[3];
         key2pos(k, grids[0].resolution, p);
@@ -399,31 +403,31 @@ std::vector<std::vector<torch::Tensor>> build_hierarchy(std::vector<torch::Tenso
     float* positions_out_ptr = texture_positions[0].data_ptr<float>();
     memcpy(positions_out_ptr, seq2pos.data(), sizeof(float) * seq2pos.size());
     positions_out_ptr = texture_positions[1].data_ptr<float>();
-    for (int i = 0; i < grids[0].seq2grid.size(); ++i) {
+    for (size_t i = 0; i < grids[0].seq2grid.size(); ++i) {
         positions_out_ptr[i] = (i < grids[0].num_origin_seq);
     }
 
-    for (int i = 0; i < grids.size(); ++i) {
+    for (size_t i = 0; i < grids.size(); ++i) {
         grid_neighbors[i] = torch::zeros({static_cast<int64_t>(grids[i].seq2grid.size()), static_cast<int64_t>(9)}, int64_options);
         int64_t* nptr = grid_neighbors[i].data_ptr<int64_t>();
-        for (int j = 0; j < grids[i].seq2neighbor.size(); ++j) {
+        for (size_t j = 0; j < grids[i].seq2neighbor.size(); ++j) {
             nptr[j] = grids[i].seq2neighbor[j];
         }
 
         grid_evencorners[i] = torch::zeros({static_cast<int64_t>(grids[i].seq2evencorner.size())}, int64_options);
         grid_oddcorners[i] = torch::zeros({static_cast<int64_t>(grids[i].seq2oddcorner.size())}, int64_options);
         int64_t* dptr = grid_evencorners[i].data_ptr<int64_t>();
-        for (int j = 0; j < grids[i].seq2evencorner.size(); ++j) {
+        for (size_t j = 0; j < grids[i].seq2evencorner.size(); ++j) {
             dptr[j] = grids[i].seq2evencorner[j];
         }
         dptr = grid_oddcorners[i].data_ptr<int64_t>();
-        for (int j = 0; j < grids[i].seq2oddcorner.size(); ++j) {
+        for (size_t j = 0; j < grids[i].seq2oddcorner.size(); ++j) {
             dptr[j] = grids[i].seq2oddcorner[j];
         }            
         if (i + 1 < grids.size()) {
             grid_downsamples[i] = torch::zeros({static_cast<int64_t>(grids[i].downsample_seq.size())}, int64_options);
             int64_t* dptr = grid_downsamples[i].data_ptr<int64_t>();
-            for (int j = 0; j < grids[i].downsample_seq.size(); ++j) {
+            for (size_t j = 0; j < grids[i].downsample_seq.size(); ++j) {
                 dptr[j] = grids[i].downsample_seq[j];
             }
         }
@@ -439,7 +443,11 @@ std::vector<std::vector<torch::Tensor>> build_hierarchy_with_feat(
     int num_level, int resolution)
 {
     if (view_layer_positions.size() != 3 || num_level < 1) {
-        printf("Alert! We require 3 layers and at least 1 level! (%d %d)\n", view_layer_positions.size(), num_level);
+        printf(
+            "Alert! We require 3 layers and at least 1 level! (%zu %d)\n",
+            view_layer_positions.size(),
+            num_level
+        );
         return {{},{},{},{}};
     }
 

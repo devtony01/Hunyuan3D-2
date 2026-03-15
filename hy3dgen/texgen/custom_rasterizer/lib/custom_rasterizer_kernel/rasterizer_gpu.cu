@@ -54,27 +54,24 @@ __global__ void barycentricFromImgcoordGPU(float* V, int* F, int* findices, INT6
     findices[pix] = f;
     f -= 1;
     float barycentric[3] = {0, 0, 0};
-    if (f >= 0) {
-        float vt[2] = {float(pix % width) + 0.5f, float(pix / width) + 0.5f};
-        float* vt0_ptr = V + (F[f * 3] * 4);
-        float* vt1_ptr = V + (F[f * 3 + 1] * 4);
-        float* vt2_ptr = V + (F[f * 3 + 2] * 4);
+    float vt[2] = {float(pix % width) + 0.5f, float(pix / width) + 0.5f};
+    float* vt0_ptr = V + (F[f * 3] * 4);
+    float* vt1_ptr = V + (F[f * 3 + 1] * 4);
+    float* vt2_ptr = V + (F[f * 3 + 2] * 4);
 
-        float vt0[2] = {(vt0_ptr[0] / vt0_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt0_ptr[1] / vt0_ptr[3]) * (height - 1) + 0.5f};
-        float vt1[2] = {(vt1_ptr[0] / vt1_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt1_ptr[1] / vt1_ptr[3]) * (height - 1) + 0.5f};
-        float vt2[2] = {(vt2_ptr[0] / vt2_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt2_ptr[1] / vt2_ptr[3]) * (height - 1) + 0.5f};
+    float vt0[2] = {(vt0_ptr[0] / vt0_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt0_ptr[1] / vt0_ptr[3]) * (height - 1) + 0.5f};
+    float vt1[2] = {(vt1_ptr[0] / vt1_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt1_ptr[1] / vt1_ptr[3]) * (height - 1) + 0.5f};
+    float vt2[2] = {(vt2_ptr[0] / vt2_ptr[3] * 0.5f + 0.5f) * (width - 1) + 0.5f, (0.5f + 0.5f * vt2_ptr[1] / vt2_ptr[3]) * (height - 1) + 0.5f};
 
-        calculateBarycentricCoordinate(vt0, vt1, vt2, vt, barycentric);
+    calculateBarycentricCoordinate(vt0, vt1, vt2, vt, barycentric);
 
-        barycentric[0] = barycentric[0] / vt0_ptr[3];
-        barycentric[1] = barycentric[1] / vt1_ptr[3];
-        barycentric[2] = barycentric[2] / vt2_ptr[3];
-        float w = 1.0f / (barycentric[0] + barycentric[1] + barycentric[2]);
-        barycentric[0] *= w;
-        barycentric[1] *= w;
-        barycentric[2] *= w;
-
-    }
+    barycentric[0] = barycentric[0] / vt0_ptr[3];
+    barycentric[1] = barycentric[1] / vt1_ptr[3];
+    barycentric[2] = barycentric[2] / vt2_ptr[3];
+    float w = 1.0f / (barycentric[0] + barycentric[1] + barycentric[2]);
+    barycentric[0] *= w;
+    barycentric[1] *= w;
+    barycentric[2] *= w;
     barycentric_map[pix * 3] = barycentric[0];
     barycentric_map[pix * 3 + 1] = barycentric[1];
     barycentric_map[pix * 3 + 2] = barycentric[2];
